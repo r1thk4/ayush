@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'interview_data.dart'; // Import our questions
+import 'interview_data.dart';
+import 'package:http/http.dart' as http; // Import the http package
+import 'dart:convert'; // Import dart:convert for JSON encoding
 
 class InterviewPage extends StatefulWidget {
   const InterviewPage({super.key});
@@ -9,25 +11,52 @@ class InterviewPage extends StatefulWidget {
 }
 
 class _InterviewPageState extends State<InterviewPage> {
-  // A map to store the selected answer for each question ID
   final Map<int, String> _answers = {};
 
-  // Function to check if all questions have been answered
   bool get _areAllQuestionsAnswered => _answers.length == interviewQuestions.length;
 
-  void _submitInterview() {
+  // This function now sends data to a backend
+  void _submitInterview() async {
     if (_areAllQuestionsAnswered) {
-      // Navigate to the loading page after submission
-      // In a real app, you would pass the _answers map to the model here
-      Navigator.pushReplacementNamed(context, '/loading');
-      print('Interview submitted with answers: $_answers');
+      // 1. Define your backend API endpoint URL
+      final url = Uri.parse('https://your-backend-api.com/generate-report'); // <-- IMPORTANT: Replace with your actual URL
+
+      // 2. Convert your answers map to a JSON string
+      final body = json.encode(_answers);
+
+      try {
+        // 3. Send the data as an HTTP POST request
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+
+        // 4. Check if the request was successful (HTTP status code 200)
+        if (response.statusCode == 200 && mounted) {
+          print('Interview submitted successfully!');
+          Navigator.pushReplacementNamed(context, '/loading');
+        } else {
+          // If the server returned an error, show a message
+          print('Failed to submit. Status code: ${response.statusCode}');
+          if(mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to submit report. Please try again.')),
+            );
+          }
+        }
+      } catch (e) {
+        // Handle potential network errors (e.g., no internet connection)
+        print('An error occurred: $e');
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('An error occurred. Please check your connection.')),
+          );
+        }
+      }
     } else {
-      // Show a message if not all questions are answered
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please answer all questions before submitting.'),
-          backgroundColor: Colors.orange,
-        ),
+        const SnackBar(content: Text('Please answer all questions before submitting.')),
       );
     }
   }
@@ -77,7 +106,6 @@ class _InterviewPageState extends State<InterviewPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        // Build radio buttons for each option
                         ...question.options.map((option) {
                           return RadioListTile<String>(
                             title: Text(
@@ -101,9 +129,7 @@ class _InterviewPageState extends State<InterviewPage> {
               },
             ),
           ),
-          // Submit Button Area
           Container(
-            // Use padding to give space around the button and lift it from the bottom
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
             color: backgroundColor,
             child: ElevatedButton(
@@ -114,7 +140,6 @@ class _InterviewPageState extends State<InterviewPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0),
                 ),
-                // Change button style based on whether all questions are answered
                 foregroundColor: _areAllQuestionsAnswered ? Colors.white : Colors.grey[300],
               ),
               child: const Text(

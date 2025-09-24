@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Import the http package
+import 'dart:convert'; // Import dart:convert for JSON encoding
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,22 +14,57 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  void _login() {
+  // This function now sends the login request to a backend
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       final String username = _usernameController.text;
       final String password = _passwordController.text;
 
-      if (username == 'testuser' && password == 'password123') {
-        // If login is successful, navigate to the new Quiz Intro Page.
-        // --- CHANGE THIS LINE ---
+      // 1. Define your backend API endpoint for login
+      final url = Uri.parse('https://your-backend-api.com/login'); // <-- IMPORTANT: Replace with your actual URL
+
+      // 2. Create the request body and encode it to JSON
+      final body = json.encode({
+        'username': username,
+        'password': password,
+      });
+
+      try {
+        // 3. Send the data as an HTTP POST request
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+
+        // 4. Check the server's response
+        if (response.statusCode == 200 && mounted) {
+          // HTTP 200 means success
+          print('Login successful!');
           Navigator.pushReplacementNamed(context, '/quiz_intro');
         } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid username or password'),
-            backgroundColor: Colors.red,
-          ),
-        );
+          // If the server returns an error (e.g., 401 Unauthorized), show an error
+          print('Login failed. Status code: ${response.statusCode}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid username or password'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        // Handle potential network errors
+        print('An error occurred: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('An error occurred. Please check your connection.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -55,10 +92,10 @@ class _LoginPageState extends State<LoginPage> {
               Color(0xFFEAB073) // Warm orange
             ],
             stops: [
-              0.0,  // Blue starts at the beginning
-              0.32,  // Green starts 20% of the way down
-              0.69,  // Orange starts 80% of the way down
-              1.0,  // Purple is at the very end
+              0.0,
+              0.32,
+              0.69,
+              1.0,
             ],
           ),
         ),
@@ -72,16 +109,14 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     const Spacer(flex: 2),
-
-                    // --- THIS IS THE UPDATED PART ---
                     Container(
-                      padding: const EdgeInsets.all(4), // Optional padding for the background
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: cardBackgroundColor,
-                        borderRadius: BorderRadius.circular(20), // This creates the outer rounded shape
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16.0), // This clips the image inside
+                        borderRadius: BorderRadius.circular(16.0),
                         child: Image.asset(
                           'assets/images/logo_lotus.png',
                           height: 80,
@@ -90,8 +125,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    // --- END OF UPDATED PART ---
-
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
