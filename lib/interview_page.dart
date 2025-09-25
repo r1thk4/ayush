@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'interview_data.dart';
-import 'package:http/http.dart' as http; // Import the http package
-import 'dart:convert'; // Import dart:convert for JSON encoding
 
 class InterviewPage extends StatefulWidget {
   const InterviewPage({super.key});
@@ -11,53 +10,47 @@ class InterviewPage extends StatefulWidget {
 }
 
 class _InterviewPageState extends State<InterviewPage> {
-  final Map<int, String> _answers = {};
+  // --- CHANGE 1: The map now uses String keys ---
+  final Map<String, String> _answers = {};
 
-  bool get _areAllQuestionsAnswered => _answers.length == interviewQuestions.length;
+  bool get _areAllQuestionsAnswered =>
+      _answers.length == interviewQuestions.length;
 
-  // This function now sends data to a backend
   void _submitInterview() async {
-    if (_areAllQuestionsAnswered) {
-      // 1. Define your backend API endpoint URL
-      final url = Uri.parse('https://your-backend-api.com/generate-report'); // <-- IMPORTANT: Replace with your actual URL
-
-      // 2. Convert your answers map to a JSON string
-      final body = json.encode(_answers);
-
-      try {
-        // 3. Send the data as an HTTP POST request
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: body,
-        );
-
-        // 4. Check if the request was successful (HTTP status code 200)
-        if (response.statusCode == 200 && mounted) {
-          print('Interview submitted successfully!');
-          Navigator.pushReplacementNamed(context, '/loading');
-        } else {
-          // If the server returned an error, show a message
-          print('Failed to submit. Status code: ${response.statusCode}');
-          if(mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to submit report. Please try again.')),
-            );
-          }
-        }
-      } catch (e) {
-        // Handle potential network errors (e.g., no internet connection)
-        print('An error occurred: $e');
-        if(mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('An error occurred. Please check your connection.')),
-          );
-        }
-      }
-    } else {
+    if (!_areAllQuestionsAnswered) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please answer all questions before submitting.')),
+        const SnackBar(
+            content: Text('Please answer all questions before submitting.')),
       );
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Not logged in. Please log in again.')),
+      );
+      return;
+    }
+
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'questionnaire_answers': _answers})
+          .eq('id', user.id);
+
+      if (mounted) {
+        print('Interview answers saved successfully for user ${user.id}!');
+        Navigator.pushReplacementNamed(context, '/loading');
+      }
+    } catch (error) {
+      print('An error occurred while saving answers: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('An error occurred. Please check your connection.')),
+        );
+      }
     }
   }
 
@@ -71,7 +64,10 @@ class _InterviewPageState extends State<InterviewPage> {
       appBar: AppBar(
         title: const Text(
           'Your Ayurvedic Profile',
-          style: TextStyle(fontFamily: 'Montserrat', color: pranaTextColor, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontFamily: 'Montserrat',
+              color: pranaTextColor,
+              fontWeight: FontWeight.bold),
         ),
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -88,7 +84,8 @@ class _InterviewPageState extends State<InterviewPage> {
                 return Card(
                   color: Colors.white,
                   margin: const EdgeInsets.only(bottom: 16.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0)),
                   elevation: 4,
                   shadowColor: Colors.black.withOpacity(0.2),
                   child: Padding(
@@ -110,13 +107,18 @@ class _InterviewPageState extends State<InterviewPage> {
                           return RadioListTile<String>(
                             title: Text(
                               option,
-                              style: const TextStyle(fontFamily: 'Montserrat', color: pranaTextColor, fontWeight: FontWeight.w900),
+                              style: const TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  color: pranaTextColor,
+                                  fontWeight: FontWeight.w900),
                             ),
                             value: option,
-                            groupValue: _answers[question.id],
+                            // --- CHANGE 2: Use the question ID as a string ---
+                            groupValue: _answers[question.id.toString()],
                             onChanged: (value) {
                               setState(() {
-                                _answers[question.id] = value!;
+                                // --- CHANGE 3: Save the answer with the ID as a string ---
+                                _answers[question.id.toString()] = value!;
                               });
                             },
                             activeColor: pranaTextColor,
@@ -140,11 +142,14 @@ class _InterviewPageState extends State<InterviewPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0),
                 ),
-                foregroundColor: _areAllQuestionsAnswered ? Colors.white : Colors.grey[300],
+                foregroundColor: _areAllQuestionsAnswered
+                    ? Colors.white
+                    : Colors.grey[300],
               ),
               child: const Text(
                 'Generate Report',
-                style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, color: Colors.white),
+                style: TextStyle(
+                    fontFamily: 'Montserrat', fontSize: 18, color: Colors.white),
               ),
             ),
           ),

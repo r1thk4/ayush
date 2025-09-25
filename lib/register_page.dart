@@ -26,7 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isLoading = false;
 
-  // Sign up function
+  // --- THIS IS THE UPDATED AND SIMPLIFIED FUNCTION ---
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -37,17 +37,13 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      // 1. Sign up the user with email and password
-      final response = await Supabase.instance.client.auth.signUp(
+      // This is the ONLY call you need to make now.
+      // The trigger will handle the profile creation automatically on the backend.
+      await Supabase.instance.client.auth.signUp(
         email: _emailController.text,
         password: _passwordController.text,
-      );
-
-      // 2. If sign-up is successful, insert profile data
-      if (response.user != null) {
-        final userId = response.user!.id;
-        await Supabase.instance.client.from('profiles').insert({
-          'id': userId,
+        data: {
+          // Pass all profile data here. Supabase makes this available to the trigger.
           'full_name': _fullNameController.text,
           'phone': _phoneController.text,
           'age': int.tryParse(_ageController.text),
@@ -56,18 +52,17 @@ class _RegisterPageState extends State<RegisterPage> {
           'weight': double.tryParse(_weightController.text),
           'activity_level': _activityLevel,
           'health_conditions': _healthConditionsController.text,
-        });
+        },
+      );
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registration successful! Please check your email to confirm.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // Navigate back to the login page after successful registration
-          Navigator.pop(context);
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please check your email to confirm.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context); // Go back to the login page
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -185,7 +180,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // Helper method for text form fields to reduce boilerplate
+  // Helper methods remain the same...
   TextFormField _buildTextFormField({required TextEditingController controller, required String label, bool obscureText = false, TextInputType? keyboardType, String? Function(String?)? validator, bool isOptional = false}) {
     return TextFormField(
       controller: controller,
@@ -209,7 +204,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // Helper method for dropdown form fields
   DropdownButtonFormField<String> _buildDropdownFormField({required String? value, required String label, required List<String> items, required void Function(String?) onChanged}) {
      return DropdownButtonFormField<String>(
       value: value,
