@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   http: ^1.2.1
+  supabase_flutter: ^2.5.8
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -24,6 +26,7 @@ flutter:
   # 'assets:' should have two spaces before it.
   # The line below it should have four spaces.
   assets:
+    - .env
     - assets/images/
 
   fonts:
