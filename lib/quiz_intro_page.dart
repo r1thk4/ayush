@@ -63,8 +63,8 @@ class _QuizIntroPageState extends State<QuizIntroPage> {
                             const Column(
                               children: [
                                 Text(
-                                  'Prana',
-                                  style: TextStyle(fontFamily: 'Cinzel', fontSize: 42, color: pranaTextColor, letterSpacing: 2.0, height: 0.8, fontWeight: FontWeight.bold),
+                                  'AyurDiet',
+                                  style: TextStyle(fontFamily: 'Cinzel', fontSize: 36, color: pranaTextColor, letterSpacing: 2.0, height: 0.8, fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   'Ayurvedic Nutrition',

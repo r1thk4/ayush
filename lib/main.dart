@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'login_page.dart';
-import 'home_page.dart';
+import 'home_page.dart'; // Make sure to import HomePage
 import 'quiz_intro_page.dart';
 import 'interview_page.dart';
 import 'loading_page.dart';
-import 'register_page.dart'; // <-- Import the new page
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'register_page.dart';
+import 'report_page.dart'; // Assuming you will create this page
+import 'view_profile_page.dart'; // Assuming you will create this page
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 2. Load the .env file
   await dotenv.load(fileName: ".env");
 
-  // 3. Initialize Supabase with the variables
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
@@ -36,15 +36,16 @@ class MyApp extends StatelessWidget {
       ),
       home: const LoginPage(),
       routes: {
-        '/home': (context) => const HomePage(),
+        '/home': (context) => const HomePage(), // Ensure this route is here
         '/login': (context) => const LoginPage(),
         '/quiz_intro': (context) => const QuizIntroPage(),
         '/interview': (context) => const InterviewPage(),
         '/loading': (context) => const LoadingPage(),
-        '/register': (context) => const RegisterPage(), // <-- Add the new route
+        '/register': (context) => const RegisterPage(),
+        '/report': (context) => const ReportPage(), // New route
+        '/view_profile': (context) => const ViewProfilePage(), // New route
       },
       debugShowCheckedModeBanner: false,
     );
   }
 }
-

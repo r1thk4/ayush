@@ -12,9 +12,12 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    setState(() { _isLoading = true; });
 
     try {
       final response = await Supabase.instance.client.auth.signInWithPassword(
@@ -22,7 +25,9 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
       if (response.user != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/quiz_intro');
+        // --- CHANGE THIS LINE ---
+        // For existing users, go directly to the Home Page
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -30,11 +35,9 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text(error.message), backgroundColor: Colors.red),
         );
       }
-    } catch (error) {
+    } finally {
       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('An unexpected error occurred.'), backgroundColor: Colors.red),
-        );
+        setState(() { _isLoading = false; });
       }
     }
   }
@@ -99,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                           children: <Widget>[
                             const Column(
                               children: [
-                                Text('Prana', style: TextStyle(fontFamily: 'Cinzel', fontSize: 48, color: pranaTextColor, letterSpacing: 1.0, height: 1.2)),
+                                Text('AyurDiet', style: TextStyle(fontFamily: 'Cinzel', fontSize: 40, color: pranaTextColor, letterSpacing: 1.0, height: 1.2)),
                                 Text('Ayurvedic Nutrition', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14, color: pranaTextColor, letterSpacing: 1.5, height: 0.1, fontWeight: FontWeight.w700)),
                               ],
                             ),
@@ -130,15 +133,16 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 25),
                             ElevatedButton(
-                              onPressed: _login,
+                              onPressed: _isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: buttonColor,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                                 padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 15),
                               ),
-                              child: const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
+                              child: _isLoading 
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
                             ),
-                             // --- ADD THIS SECTION ---
                             const SizedBox(height: 20),
                             TextButton(
                               onPressed: () {
@@ -146,10 +150,9 @@ class _LoginPageState extends State<LoginPage> {
                               },
                               child: const Text(
                                 "Don't have an account? Sign Up",
-                                style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat'),
+                                style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat', fontWeight: FontWeight.w900),
                               ),
                             ),
-                            // --- END OF SECTION ---
                           ],
                         ),
                       ),

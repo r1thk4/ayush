@@ -11,7 +11,6 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers for all the input fields
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -23,33 +22,26 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? _gender;
   String? _activityLevel;
-
   bool _isLoading = false;
 
-  // --- THIS IS THE UPDATED AND SIMPLIFIED FUNCTION ---
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
 
     try {
-      // This is the ONLY call you need to make now.
-      // The trigger will handle the profile creation automatically on the backend.
       await Supabase.instance.client.auth.signUp(
         email: _emailController.text,
         password: _passwordController.text,
         data: {
-          // Pass all profile data here. Supabase makes this available to the trigger.
           'full_name': _fullNameController.text,
           'phone': _phoneController.text,
           'age': int.tryParse(_ageController.text),
           'gender': _gender,
-          'height': double.tryParse(_heightController.text),
-          'weight': double.tryParse(_weightController.text),
+          'height_cm': double.tryParse(_heightController.text),
+          'weight_kg': double.tryParse(_weightController.text),
           'activity_level': _activityLevel,
           'health_conditions': _healthConditionsController.text,
         },
@@ -58,11 +50,13 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration successful! Please check your email to confirm.'),
+            content: Text('Registration successful! Please take our interview to get started.'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context); // Go back to the login page
+        // --- CHANGE THIS LINE ---
+        // For new users, go to the Quiz Intro page to start the interview
+        Navigator.pushReplacementNamed(context, '/quiz_intro');
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -70,17 +64,9 @@ class _RegisterPageState extends State<RegisterPage> {
           SnackBar(content: Text(error.message), backgroundColor: Colors.red),
         );
       }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('An unexpected error occurred.'), backgroundColor: Colors.red),
-        );
-      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
       }
     }
   }
@@ -148,15 +134,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   label: 'Password',
                   obscureText: true,
                   validator: (value) {
-                    if (value == null || value.length < 8) {
-                      return 'Password must be at least 8 characters';
-                    }
-                    if (!value.contains(RegExp(r'[A-Z]'))) {
-                      return 'Must contain an uppercase letter';
-                    }
-                     if (!value.contains(RegExp(r'[0-9]'))) {
-                      return 'Must contain a number';
-                    }
+                    if (value == null || value.length < 8) return 'Password must be at least 8 characters';
+                    if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain an uppercase letter';
+                    if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain a number';
                     return null;
                   },
                 ),
@@ -180,25 +160,16 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // Helper methods remain the same...
   TextFormField _buildTextFormField({required TextEditingController controller, required String label, bool obscureText = false, TextInputType? keyboardType, String? Function(String?)? validator, bool isOptional = false}) {
     return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
+      controller: controller, obscureText: obscureText, keyboardType: keyboardType,
       decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
+        labelText: label, filled: true, fillColor: Colors.white,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFD2B48C))),
       ),
       validator: isOptional ? null : (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your $label';
-        }
-        if (validator != null) {
-          return validator(value);
-        }
+        if (value == null || value.isEmpty) return 'Please enter your $label';
+        if (validator != null) return validator(value);
         return null;
       },
     );
@@ -208,19 +179,13 @@ class _RegisterPageState extends State<RegisterPage> {
      return DropdownButtonFormField<String>(
       value: value,
       decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
+        labelText: label, filled: true, fillColor: Colors.white,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFD2B48C))),
       ),
-      items: items.map((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
+      items: items.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value))).toList(),
       onChanged: onChanged,
       validator: (value) => value == null ? 'Please select your $label' : null,
     );
   }
 }
+
