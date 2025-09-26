@@ -11,6 +11,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controllers for all the input fields
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -20,6 +21,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _healthConditionsController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // --- NEW: State variable for the Goal dropdown ---
+  String? _goal;
   String? _gender;
   String? _activityLevel;
   bool _isLoading = false;
@@ -31,6 +34,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() { _isLoading = true; });
 
+    // --- NEW: Convert the selected goal to the required format ---
+    String? goalForSupabase;
+    if (_goal != null) {
+      goalForSupabase = _goal!.toLowerCase().replaceAll(' ', '_');
+    }
+    
     try {
       await Supabase.instance.client.auth.signUp(
         email: _emailController.text,
@@ -40,10 +49,12 @@ class _RegisterPageState extends State<RegisterPage> {
           'phone': _phoneController.text,
           'age': int.tryParse(_ageController.text),
           'gender': _gender,
-          'height_cm': double.tryParse(_heightController.text),
-          'weight_kg': double.tryParse(_weightController.text),
+          // --- FIX: Made parsing for height and weight more robust ---
+          'height_cm': double.tryParse(_heightController.text.replaceAll(',', '.')),
+          'weight_kg': double.tryParse(_weightController.text.replaceAll(',', '.')),
           'activity_level': _activityLevel,
           'health_conditions': _healthConditionsController.text,
+          'goal': goalForSupabase, // Added the new goal field
         },
       );
 
@@ -54,8 +65,6 @@ class _RegisterPageState extends State<RegisterPage> {
             backgroundColor: Colors.green,
           ),
         );
-        // --- CHANGE THIS LINE ---
-        // For new users, go to the Quiz Intro page to start the interview
         Navigator.pushReplacementNamed(context, '/quiz_intro');
       }
     } on AuthException catch (error) {
@@ -120,6 +129,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                // --- NEW: Added the Goal dropdown field ---
+                _buildDropdownFormField(
+                  value: _goal,
+                  label: 'Goal',
+                  items: ['Lose weight', 'Gain weight', 'Maintain weight'],
+                  onChanged: (value) => setState(() => _goal = value),
+                ),
+                const SizedBox(height: 16),
                 _buildDropdownFormField(
                   value: _activityLevel,
                   label: 'Activity Level',
@@ -160,6 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // Helper methods are unchanged, they correctly handle mandatory fields
   TextFormField _buildTextFormField({required TextEditingController controller, required String label, bool obscureText = false, TextInputType? keyboardType, String? Function(String?)? validator, bool isOptional = false}) {
     return TextFormField(
       controller: controller, obscureText: obscureText, keyboardType: keyboardType,
@@ -188,4 +206,3 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-

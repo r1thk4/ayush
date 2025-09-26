@@ -46,7 +46,7 @@ class _ReportPageState extends State<ReportPage> {
   @override
   Widget build(BuildContext context) {
     const pranaTextColor = Color(0xFF6B5B3B);
-    const pageBackgroundColor = Color(0xFF2C5A66);
+    const pageBackgroundColor = Color.fromARGB(255, 69, 136, 153);
     const cardBackgroundColor = Color(0xFFF3F3ED);
 
     return Scaffold(
