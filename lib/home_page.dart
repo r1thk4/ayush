@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:math';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,16 +10,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // --- RESTORED: State variables for user's name and email ---
   String _userName = 'User';
   String? _userEmail;
-  String _predictedDosha = '...';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile();
+    _fetchUserProfile(); // Fetch the user's profile on page load
   }
 
+  // --- RESTORED: Function to fetch user's full name and email ---
   Future<void> _fetchUserProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
@@ -26,23 +28,17 @@ class _HomePageState extends State<HomePage> {
       try {
         final response = await Supabase.instance.client
             .from('profiles')
-            .select('full_name, prakriti')
+            .select('full_name')
             .eq('id', user.id)
             .single();
 
-        if (mounted) {
+        if (mounted && response['full_name'] != null) {
           setState(() {
-            _userName = response['full_name'] ?? 'User';
-            _predictedDosha = response['prakriti'] ?? 'None';
+            _userName = response['full_name'];
           });
         }
       } catch (e) {
-        print('Error fetching user profile: $e');
-        if (mounted) {
-          setState(() {
-            _predictedDosha = 'Take Interview';
-          });
-        }
+        print('Error fetching user name: $e');
       }
     }
   }
@@ -57,150 +53,58 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     const pranaTextColor = Color(0xFF6B5B3B);
-    const backgroundColor = Color(0xFFF3F3ED);
+    const headerColor = Color(0xFFB3C691);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Hi, ${_userName.split(' ').first}!',
-          style: const TextStyle(
-            fontFamily: 'Cinzel',
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: pranaTextColor,
-          ),
-        ),
-        actions: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.person_outline, size: 30, color: pranaTextColor),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-              tooltip: 'Profile Menu',
-            ),
-          ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(_userName, style: const TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
-              accountEmail: Text(_userEmail ?? '', style: const TextStyle(fontFamily: 'Montserrat')),
-              decoration: const BoxDecoration(color: pranaTextColor),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('View Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/view_profile');
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: _logout,
-            ),
-          ],
-        ),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(24.0),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  // --- WRAPPED THIS CARD WITH GESTUREDETECTOR ---
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/dosha_result');
-                    },
-                    child: Card(
-                      elevation: 8,
-                      shadowColor: Colors.black.withOpacity(0.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFEAB073), Color(0xFFF2B176)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Your Primary Dosha',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            Text(
-                              _predictedDosha,
-                              style: const TextStyle(
-                                fontFamily: 'Cinzel',
-                                color: Color.fromARGB(255, 82, 70, 45),
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'This represents your core constitution. All diet recommendations are based on this profile.',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                color: Colors.white,
-                                fontSize: 14,
-                                height: 1.4,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          _buildHeader(context, headerColor, pranaTextColor),
+          Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.25),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30.0),
+                  topRight: Radius.circular(30.0),
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'How can we help?',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: pranaTextColor,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Your Tools',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: pranaTextColor,
+                    const SizedBox(height: 20),
+                    _buildActionTile(
+                      icon: Icons.restaurant_menu,
+                      title: 'Generate Diet Chart',
+                      onTap: () { /* Navigator.pushNamed(context, '/diet_chart'); */ },
+                      iconColor: const Color(0xFF3A6A70),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Action Buttons
-                  _buildActionTile(
-                    icon: Icons.assignment_outlined,
-                    title: 'View Full Report',
-                    subtitle: 'See your detailed diet chart and analysis.',
-                    onTap: () => Navigator.pushNamed(context, '/report'),
-                    iconColor: const Color(0xFF3A6A70),
-                  ),
-                  _buildActionTile(
-                    icon: Icons.replay_outlined,
-                    title: 'Retake Interview',
-                    subtitle: 'Update your profile if your lifestyle has changed.',
-                    onTap: () => Navigator.pushNamed(context, '/interview'),
-                    iconColor: const Color(0xFFE5D57B),
-                  ),
-                ],
+                    _buildActionTile(
+                      icon: Icons.medical_services_outlined,
+                      title: 'Report by Doctor',
+                      onTap: () { /* Navigator.pushNamed(context, '/doctor_report'); */ },
+                      iconColor: const Color(0xFFE5D57B),
+                    ),
+                    _buildActionTile(
+                      icon: Icons.location_on_outlined,
+                      title: 'Find Doctors Nearby',
+                      onTap: () { /* Navigator.pushNamed(context, '/find_doctors'); */ },
+                      iconColor: const Color(0xFFF2B176),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -209,14 +113,103 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Helper widget for creating the tappable action tiles
+  Widget _buildHeader(BuildContext context, Color headerColor, Color pranaTextColor) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.28,
+      width: double.infinity,
+      decoration: BoxDecoration(color: headerColor),
+      child: Stack(
+        children: [
+          const _DoshaCardBackground(),
+          Padding(
+            padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 40),
+                    const Text(
+                      'Hello,',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    // --- CORRECTED: Displays the fetched user name ---
+                    Text(
+                      _userName.split(' ').first,
+                      style: const TextStyle(
+                        fontFamily: 'Cinzel',
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'profile') {
+                      Navigator.pushNamed(context, '/view_profile');
+                    } else if (value == 'logout') {
+                      _logout();
+                    }
+                  },
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    PopupMenuItem<String>(
+                      value: 'profile',
+                      child: Center(
+                        child: Text(
+                          'View profile',
+                          style: TextStyle(fontFamily: 'Montserrat', color: pranaTextColor),
+                        ),
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: _logout,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Logout', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ],
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    child: const Icon(Icons.person_outline, size: 30, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionTile({
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
     required Color iconColor,
   }) {
+    const pranaTextColor = Color(0xFF6B5B3B);
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -224,32 +217,96 @@ class _HomePageState extends State<HomePage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: iconColor),
+          child: Icon(icon, color: iconColor, size: 28),
         ),
         title: Text(
           title,
           style: const TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.bold,
-            color: Color(0xFF6B5B3B),
+            color: pranaTextColor,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            fontFamily: 'Montserrat',
-            color: Color(0xFF6B5B3B),
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       ),
     );
   }
+}
+
+// Animated Bubble Background Widget
+class _DoshaCardBackground extends StatefulWidget {
+  const _DoshaCardBackground();
+  @override
+  State<_DoshaCardBackground> createState() => _DoshaCardBackgroundState();
+}
+
+class _DoshaCardBackgroundState extends State<_DoshaCardBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late List<Bubble> _bubbles;
+  final Random _random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 25),
+    )..repeat();
+
+    _bubbles = List.generate(15, (index) {
+      return Bubble(
+        startPosition: Offset(_random.nextDouble(), _random.nextDouble() + 1.0),
+        radius: _random.nextDouble() * 15 + 10,
+        speed: _random.nextDouble() * 0.2 + 0.1,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: BubblePainter(_bubbles, _controller),
+      child: Container(),
+    );
+  }
+}
+
+class Bubble {
+  final Offset startPosition;
+  final double radius;
+  final double speed;
+  Bubble({required this.startPosition, required this.radius, required this.speed});
+}
+
+class BubblePainter extends CustomPainter {
+  final List<Bubble> bubbles;
+  final Animation<double> animation;
+  BubblePainter(this.bubbles, this.animation) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white.withOpacity(0.15);
+
+    for (var bubble in bubbles) {
+      final currentY = (bubble.startPosition.dy - (animation.value * bubble.speed)) % 1.5;
+      final position = Offset(bubble.startPosition.dx * size.width, currentY * size.height - (size.height * 0.5));
+      canvas.drawCircle(position, bubble.radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
