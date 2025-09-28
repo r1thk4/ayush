@@ -10,42 +10,47 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _userName = 'User';
+  String? _userEmail;
+  String _predictedDosha = '...';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserName();
+    _fetchUserProfile();
   }
 
-  Future<void> _fetchUserName() async {
+  Future<void> _fetchUserProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
+      _userEmail = user.email;
       try {
         final response = await Supabase.instance.client
             .from('profiles')
-            .select('full_name')
+            .select('full_name, prakriti')
             .eq('id', user.id)
             .single();
 
-        if (response['full_name'] != null) {
+        if (mounted) {
           setState(() {
-            _userName = response['full_name'];
+            _userName = response['full_name'] ?? 'User';
+            _predictedDosha = response['prakriti'] ?? 'None';
           });
         }
       } catch (e) {
-        print('Error fetching user name: $e');
+        print('Error fetching user profile: $e');
+        if (mounted) {
+          setState(() {
+            _predictedDosha = 'Take Interview';
+          });
+        }
       }
     }
   }
 
   Future<void> _logout() async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-      }
-    } catch (e) {
-      print('Error logging out: $e');
+    await Supabase.instance.client.auth.signOut();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
 
@@ -56,167 +61,194 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- THIS TOP ROW IS UPDATED ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Hi, ${_userName.split(' ').first}!',
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Hi, ${_userName.split(' ').first}!',
+          style: const TextStyle(
+            fontFamily: 'Cinzel',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: pranaTextColor,
+          ),
+        ),
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.person_outline, size: 30, color: pranaTextColor),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+              tooltip: 'Profile Menu',
+            ),
+          ),
+        ],
+      ),
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(_userName, style: const TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
+              accountEmail: Text(_userEmail ?? '', style: const TextStyle(fontFamily: 'Montserrat')),
+              decoration: const BoxDecoration(color: pranaTextColor),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('View Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/view_profile');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: _logout,
+            ),
+          ],
+        ),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(24.0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  // --- WRAPPED THIS CARD WITH GESTUREDETECTOR ---
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/dosha_result');
+                    },
+                    child: Card(
+                      elevation: 8,
+                      shadowColor: Colors.black.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFEAB073), Color(0xFFF2B176)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Your Primary Dosha',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              _predictedDosha,
+                              style: const TextStyle(
+                                fontFamily: 'Cinzel',
+                                color: Color.fromARGB(255, 82, 70, 45),
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'This represents your core constitution. All diet recommendations are based on this profile.',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.4,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Your Tools',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontSize: 40,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: pranaTextColor,
                     ),
                   ),
-                  // Use PopupMenuButton for the dialog
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'profile') {
-                        Navigator.pushNamed(context, '/view_profile');
-                      } else if (value == 'logout') {
-                        _logout();
-                      }
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      // "View profile" item
-                      const PopupMenuItem<String>( 
-                        value: 'profile',
-                        child: Center(
-                          child: Text(
-                            'View profile',
-                            style: TextStyle(fontFamily: 'Montserrat', color: pranaTextColor, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                      ),
-                      // "Logout" item with custom styling
-                      PopupMenuItem<String>(
-                        value: 'logout',
-                        child: Center(
-                          child: ElevatedButton(
-                            onPressed: _logout,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text('Logout', style: TextStyle(color: Colors.white)),
-                          ),
-                        ),
-                      ),
-                    ],
-                    // The icon that triggers the popup
-                    child: const Icon(
-                      Icons.person_outline,
-                      size: 35, // Restored icon size
-                      color: pranaTextColor,
-                    ),
+                  const SizedBox(height: 16),
+                  
+                  // Action Buttons
+                  _buildActionTile(
+                    icon: Icons.assignment_outlined,
+                    title: 'View Full Report',
+                    subtitle: 'See your detailed diet chart and analysis.',
+                    onTap: () => Navigator.pushNamed(context, '/report'),
+                    iconColor: const Color(0xFF3A6A70),
+                  ),
+                  _buildActionTile(
+                    icon: Icons.replay_outlined,
+                    title: 'Retake Interview',
+                    subtitle: 'Update your profile if your lifestyle has changed.',
+                    onTap: () => Navigator.pushNamed(context, '/interview'),
+                    iconColor: const Color(0xFFE5D57B),
                   ),
                 ],
               ),
-              const SizedBox(height: 40),
-              _buildFeatureCard(
-                context,
-                imagePath: 'assets/images/home_1.png',
-                title: 'Report',
-                description:
-                    'Tap here to discover the curated diet chart designed to bring your body and mind into perfect balance and begin your journey to wellness.',
-                cardColor: const Color(0xFFF2B176),
-                onTap: () {
-                  Navigator.pushNamed(context, '/report');
-                },
-              ),
-              const SizedBox(height: 24),
-              _buildFeatureCard(
-                context,
-                imagePath: 'assets/images/home_2.png',
-                title: 'Interview',
-                description:
-                    'Has your lifestyle or health recently changed? Retake our quick interview to recalibrate your Ayurvedic profile, ensuring your diet plan remains perfectly aligned with your current body and mind\'s needs.',
-                cardColor: const Color(0xFFE8C16E),
-                onTap: () {
-                  Navigator.pushNamed(context, '/interview');
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildFeatureCard(
-    BuildContext context, {
-    required String imagePath,
+  /// Helper widget for creating the tappable action tiles
+  Widget _buildActionTile({
+    required IconData icon,
     required String title,
-    required String description,
-    required Color cardColor,
+    required String subtitle,
     required VoidCallback onTap,
+    required Color iconColor,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        color: cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: iconColor),
         ),
-        elevation: 5,
-        shadowColor: Colors.black.withOpacity(0.2),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      imagePath,
-                      height: 80,
-                      width: 80,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  description,
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-              ),
-            ],
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF6B5B3B),
           ),
         ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(
+            fontFamily: 'Montserrat',
+            color: Color(0xFF6B5B3B),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       ),
     );
   }

@@ -12,7 +12,7 @@ class _LoadingPageState extends State<LoadingPage> {
   int _currentImageIndex = 0;
   Timer? _imageCycleTimer;
   final int _totalImages = 5;
-  final int _imageDurationMs = 900;
+  final int _imageDurationMs = 1000;
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _LoadingPageState extends State<LoadingPage> {
       if (mounted) {
         // --- CHANGE THIS LINE ---
         // After loading, go to the Report page
-        Navigator.pushReplacementNamed(context, '/report');
+        Navigator.pushReplacementNamed(context, '/dosha_result');
       }
     });
   }
@@ -66,7 +66,7 @@ class _LoadingPageState extends State<LoadingPage> {
             ),
             const SizedBox(height: 40),
             const Text(
-              'Generating your personalized report...',
+              'Predicting you dosha...',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Montserrat',

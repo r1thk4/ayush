@@ -9,6 +9,7 @@ import 'loading_page.dart';
 import 'register_page.dart';
 import 'report_page.dart'; // Assuming you will create this page
 import 'view_profile_page.dart'; // Assuming you will create this page
+import 'dosha_result_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/report': (context) => const ReportPage(), // New route
         '/view_profile': (context) => const ViewProfilePage(), // New route
+        '/dosha_result': (context) => const DoshaResultPage(),
       },
       debugShowCheckedModeBanner: false,
     );

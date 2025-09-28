@@ -147,7 +147,7 @@ class _InterviewPageState extends State<InterviewPage> {
                     : Colors.grey[300],
               ),
               child: const Text(
-                'Generate Report',
+                'Predict Dosha',
                 style: TextStyle(
                     fontFamily: 'Montserrat', fontSize: 18, color: Colors.white),
               ),
