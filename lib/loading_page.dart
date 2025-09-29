@@ -2,7 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class LoadingPage extends StatefulWidget {
-  const LoadingPage({super.key});
+  // --- NEW: Add properties to accept parameters ---
+  final String loadingText;
+  final String nextRoute;
+
+  const LoadingPage({
+    super.key,
+    required this.loadingText,
+    required this.nextRoute,
+  });
 
   @override
   State<LoadingPage> createState() => _LoadingPageState();
@@ -29,9 +37,8 @@ class _LoadingPageState extends State<LoadingPage> {
     final totalLoadingTimeMs = _totalImages * _imageDurationMs;
     Future.delayed(Duration(milliseconds: totalLoadingTimeMs), () {
       if (mounted) {
-        // --- CHANGE THIS LINE ---
-        // After loading, go to the Report page
-        Navigator.pushReplacementNamed(context, '/dosha_result');
+        // --- NEW: Use the 'nextRoute' parameter for navigation ---
+        Navigator.pushReplacementNamed(context, widget.nextRoute);
       }
     });
   }
@@ -65,10 +72,11 @@ class _LoadingPageState extends State<LoadingPage> {
               ),
             ),
             const SizedBox(height: 40),
-            const Text(
-              'Predicting you dosha...',
+            Text(
+              // --- NEW: Use the 'loadingText' parameter here ---
+              widget.loadingText,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Montserrat',
                 color: pranaTextColor,
                 fontSize: 18,
@@ -81,4 +89,5 @@ class _LoadingPageState extends State<LoadingPage> {
     );
   }
 }
+
 

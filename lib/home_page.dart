@@ -10,17 +10,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // --- RESTORED: State variables for user's name and email ---
   String _userName = 'User';
   String? _userEmail;
+  String _predictedDosha = '...';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile(); // Fetch the user's profile on page load
+    _fetchUserProfile();
   }
 
-  // --- RESTORED: Function to fetch user's full name and email ---
   Future<void> _fetchUserProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
@@ -28,17 +27,23 @@ class _HomePageState extends State<HomePage> {
       try {
         final response = await Supabase.instance.client
             .from('profiles')
-            .select('full_name')
+            .select('full_name, prakriti')
             .eq('id', user.id)
             .single();
 
-        if (mounted && response['full_name'] != null) {
+        if (mounted) {
           setState(() {
-            _userName = response['full_name'];
+            _userName = response['full_name'] ?? 'User';
+            _predictedDosha = response['prakriti'] ?? 'Take Interview';
           });
         }
       } catch (e) {
-        print('Error fetching user name: $e');
+        print('Error fetching user profile: $e');
+        if (mounted) {
+          setState(() {
+            _predictedDosha = 'Take Interview';
+          });
+        }
       }
     }
   }
@@ -85,23 +90,30 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    // --- UPDATED ACTION TILES WITH IMAGES ---
                     _buildActionTile(
-                      icon: Icons.restaurant_menu,
+                      imagePath: 'assets/images/home_1.png', // Using your image
                       title: 'Generate Diet Chart',
-                      onTap: () { /* Navigator.pushNamed(context, '/diet_chart'); */ },
-                      iconColor: const Color(0xFF3A6A70),
+                      subtitle: 'Get a diet plan based on your preferences.',
+                      onTap: () { Navigator.pushNamed(context, '/diet_chart_interview'); },
                     ),
                     _buildActionTile(
-                      icon: Icons.medical_services_outlined,
+                      imagePath: 'assets/images/home_2.png', // Using your image
+                      title: 'Take Interview',
+                      subtitle: 'Answer a few questions to determine your Dosha.',
+                      onTap: () { Navigator.pushNamed(context, '/interview'); },
+                    ),
+                    _buildActionTile(
+                      imagePath: 'assets/images/home_3.png', // Using a placeholder
                       title: 'Report by Doctor',
+                      subtitle: 'Request a professional review of your report.',
                       onTap: () { /* Navigator.pushNamed(context, '/doctor_report'); */ },
-                      iconColor: const Color(0xFFE5D57B),
                     ),
                     _buildActionTile(
-                      icon: Icons.location_on_outlined,
+                      imagePath: 'assets/images/home_4.png', // Using a placeholder
                       title: 'Find Doctors Nearby',
+                      subtitle: 'Locate certified Ayurvedic practitioners near you.',
                       onTap: () { /* Navigator.pushNamed(context, '/find_doctors'); */ },
-                      iconColor: const Color(0xFFF2B176),
                     ),
                   ],
                 ),
@@ -114,100 +126,113 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHeader(BuildContext context, Color headerColor, Color pranaTextColor) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.28,
-      width: double.infinity,
-      decoration: BoxDecoration(color: headerColor),
-      child: Stack(
-        children: [
-          const _DoshaCardBackground(),
-          Padding(
-            padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 40),
-                    const Text(
-                      'Hello,',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    // --- CORRECTED: Displays the fetched user name ---
-                    Text(
-                      _userName.split(' ').first,
-                      style: const TextStyle(
-                        fontFamily: 'Cinzel',
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'profile') {
-                      Navigator.pushNamed(context, '/view_profile');
-                    } else if (value == 'logout') {
-                      _logout();
-                    }
-                  },
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(
-                      value: 'profile',
-                      child: Center(
-                        child: Text(
-                          'View profile',
-                          style: TextStyle(fontFamily: 'Montserrat', color: pranaTextColor),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/dosha_result');
+      },
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.28,
+        width: double.infinity,
+        decoration: BoxDecoration(color: headerColor),
+        child: Stack(
+          children: [
+            const _DoshaCardBackground(),
+            Padding(
+              padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Hello,',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          color: Colors.white,
+                          fontSize: 20,
                         ),
                       ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'logout',
-                      child: Center(
-                        child: ElevatedButton(
-                          onPressed: _logout,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: const Text('Logout', style: TextStyle(color: Colors.white)),
+                      Text(
+                        _userName.split(' ').first,
+                        style: const TextStyle(
+                          fontFamily: 'Cinzel',
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                    child: const Icon(Icons.person_outline, size: 30, color: Colors.white),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Your Dosha: $_predictedDosha',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'profile') {
+                        Navigator.pushNamed(context, '/view_profile');
+                      } else if (value == 'logout') {
+                        _logout();
+                      }
+                    },
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'profile',
+                        child: Center(
+                          child: Text(
+                            'View profile',
+                            style: TextStyle(fontFamily: 'Montserrat', color: pranaTextColor),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Center(
+                          child: ElevatedButton(
+                            onPressed: _logout,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                      child: const Icon(Icons.person_outline, size: 30, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  // --- UPDATED HELPER WIDGET TO USE IMAGES ---
   Widget _buildActionTile({
-    required IconData icon,
+    required String imagePath, // Changed from IconData
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
-    required Color iconColor,
   }) {
     const pranaTextColor = Color(0xFF6B5B3B);
     return Card(
@@ -218,13 +243,10 @@ class _HomePageState extends State<HomePage> {
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: iconColor, size: 28),
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundImage: AssetImage(imagePath), // Use the image path here
+          backgroundColor: Colors.transparent, // Avoid default color if image is transparent
         ),
         title: Text(
           title,
@@ -232,6 +254,14 @@ class _HomePageState extends State<HomePage> {
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.bold,
             color: pranaTextColor,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            color: pranaTextColor.withOpacity(0.7),
+            fontSize: 12,
           ),
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),

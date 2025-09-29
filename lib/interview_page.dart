@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'interview_data.dart';
+import 'loading_page.dart'; // Import the loading page
 
 class InterviewPage extends StatefulWidget {
   const InterviewPage({super.key});
@@ -10,7 +11,6 @@ class InterviewPage extends StatefulWidget {
 }
 
 class _InterviewPageState extends State<InterviewPage> {
-  // --- CHANGE 1: The map now uses String keys ---
   final Map<String, String> _answers = {};
 
   bool get _areAllQuestionsAnswered =>
@@ -34,6 +34,7 @@ class _InterviewPageState extends State<InterviewPage> {
     }
 
     try {
+      // Save the answers to the user's profile
       await Supabase.instance.client
           .from('profiles')
           .update({'questionnaire_answers': _answers})
@@ -41,7 +42,18 @@ class _InterviewPageState extends State<InterviewPage> {
 
       if (mounted) {
         print('Interview answers saved successfully for user ${user.id}!');
-        Navigator.pushReplacementNamed(context, '/loading');
+        
+        // --- THIS IS THE CORRECTED NAVIGATION ---
+        // Call the reusable loading page with the right parameters
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LoadingPage(
+              loadingText: 'Predicting your Dosha...',
+              nextRoute: '/dosha_result',
+            ),
+          ),
+        );
       }
     } catch (error) {
       print('An error occurred while saving answers: $error');
@@ -113,11 +125,9 @@ class _InterviewPageState extends State<InterviewPage> {
                                   fontWeight: FontWeight.w900),
                             ),
                             value: option,
-                            // --- CHANGE 2: Use the question ID as a string ---
                             groupValue: _answers[question.id.toString()],
                             onChanged: (value) {
                               setState(() {
-                                // --- CHANGE 3: Save the answer with the ID as a string ---
                                 _answers[question.id.toString()] = value!;
                               });
                             },

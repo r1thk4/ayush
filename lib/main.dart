@@ -5,11 +5,12 @@ import 'login_page.dart';
 import 'home_page.dart'; // Make sure to import HomePage
 import 'quiz_intro_page.dart';
 import 'interview_page.dart';
-import 'loading_page.dart';
 import 'register_page.dart';
 import 'report_page.dart'; // Assuming you will create this page
 import 'view_profile_page.dart'; // Assuming you will create this page
 import 'dosha_result_page.dart';
+import 'diet_chart_interview_page.dart';
+import 'diet_chart_display_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,11 +42,12 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/quiz_intro': (context) => const QuizIntroPage(),
         '/interview': (context) => const InterviewPage(),
-        '/loading': (context) => const LoadingPage(),
         '/register': (context) => const RegisterPage(),
         '/report': (context) => const ReportPage(), // New route
         '/view_profile': (context) => const ViewProfilePage(), // New route
         '/dosha_result': (context) => const DoshaResultPage(),
+        '/diet_chart_interview': (context) => const DietChartInterviewPage(), // <-- ADD THIS
+        '/diet_chart_display': (context) => const DietChartDisplayPage()
       },
       debugShowCheckedModeBanner: false,
     );
