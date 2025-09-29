@@ -1,66 +1,45 @@
 import 'dart:convert';
 
-class ReportData {
+// A helper class to hold the combined report data
+class FullReportData {
+  final Map<String, double> probabilities;
+  final TextualReport textualReport;
+
+  FullReportData({required this.probabilities, required this.textualReport});
+}
+
+
+// Classes to parse the textual report JSON
+class TextualReport {
   final InputParameters inputParameters;
-  final int calculatedTdee;
-  final int calorieTarget;
   final String report;
 
-  ReportData({
+  TextualReport({
     required this.inputParameters,
-    required this.calculatedTdee,
-    required this.calorieTarget,
     required this.report,
   });
 
-  factory ReportData.fromJson(String str) => ReportData.fromMap(json.decode(str));
-
-  factory ReportData.fromMap(Map<String, dynamic> json) => ReportData(
+  factory TextualReport.fromMap(Map<String, dynamic> json) => TextualReport(
         inputParameters: InputParameters.fromMap(json["input_parameters"]),
-        calculatedTdee: json["calculated_tdee"] ?? 0,
-        calorieTarget: json["calorie_target"] ?? 0,
-        report: json["report"] ?? 'No report available.',
+        report: json["report"] ?? 'No detailed report available.',
       );
 }
 
 class InputParameters {
   final String dosha;
-  final String goal;
-  final int weightKg;
-  final int heightCm;
-  final int age;
-  final String gender;
-  final String activityLevel;
-
-  InputParameters({
-    required this.dosha,
-    required this.goal,
-    required this.weightKg,
-    required this.heightCm,
-    required this.age,
-    required this.gender,
-    required this.activityLevel,
-  });
+  // Other parameters can be added here if needed in the UI
+  
+  InputParameters({required this.dosha});
 
   factory InputParameters.fromMap(Map<String, dynamic> json) => InputParameters(
-        // Use ?? to provide a default value if the key is missing or null
         dosha: json["dosha"] ?? 'N/A',
-        // Use ?. (null-aware operator) before calling methods on potentially null strings
-        goal: (json["goal"] as String?)?.replaceAll('_', ' ').capitalize() ?? 'N/A',
-        weightKg: json["weight_kg"] ?? 0,
-        heightCm: json["height_cm"] ?? 0,
-        age: json["age"] ?? 0,
-        gender: (json["gender"] as String?)?.capitalize() ?? 'N/A',
-        activityLevel: (json["activity_level"] as String?)?.capitalize() ?? 'N/A',
       );
 }
 
-// Helper extension to add the capitalize() function to the String class
-extension StringExtensions on String {
+// Helper extension to capitalize strings
+extension StringExtension on String {
   String capitalize() {
-    if (isEmpty) {
-      return this;
-    }
+    if (isEmpty) return "";
     return "${this[0].toUpperCase()}${substring(1)}";
   }
 }
