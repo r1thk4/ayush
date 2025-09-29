@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'report_model.dart'; // Import the model we just created
+import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -9,192 +10,192 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
-  Future<ReportData>? _reportDataFuture;
+  late Future<Map<String, double>> _doshaProbabilitiesFuture;
 
-  // This is your JSON data from the backend
-  final String _jsonResponse = '''
-  {
-    "input_parameters": {
-      "dosha": "Pitta",
-      "goal": "lose_weight",
-      "weight_kg": 70,
-      "height_cm": 165,
-      "age": 35,
-      "gender": "male",
-      "activity_level": "sedentary"
-    },
-    "calculated_tdee": 1873,
-    "calorie_target": 1373,
-    "report": "**Personalized Meal Plan Report**\\n\\nAs an expert Ayurvedic nutritionist, I've created a personalized meal plan tailored to your dominant dosha (Pitta), health goal (Lose Weight), and daily calorie target of approximately 1373 Kcal.\\n\\n**Breakfast:**\\n* Oatmeal with Ghee and Almonds (approx. 340 calories)\\n\\t+ Oatmeal (warm): Excellent for Pitta, grounding, nourishing, and soothing.\\n\\t+ Ghee (Clarified Butter): Cooling, aids digestion, and nourishes tissues. Benefits Pitta and can help with weight loss.\\n\\t+ Almonds (soaked and peeled): Nourishing, building, and grounding. Supports Vata, which is good for Pitta's digestive fire.\\n\\n**Lunch:**\\n* Basmati Rice with Mung Beans and Cucumber (approx. 435 calories)\\n\\t+ Basmati Rice: Balances Vata and Pitta, providing stable energy.\\n\\t+ Mung Beans (cooked): Tridoshic, especially good for Pitta, easy to digest, cleansing, and nourishing.\\n\\t+ Cucumber: Cooling, hydrating, and detoxifying. Excellent for Pitta.\\n\\n**Dinner:**\\n* Leafy Greens with Ghee (approx. 420 calories)\\n\\t+ Leafy Greens (cooked): Good for Pitta, cleansing, light, and rich in minerals.\\n\\t+ Ghee (Clarified Butter): Cooling, aids digestion, and nourishes tissues. Benefits Pitta and can help with weight loss.\\n\\n**Total Daily Calories:** 1195\\n\\nTo achieve your daily calorie target of approximately 1373 Kcal, I recommend adding an additional snack or adjusting portion sizes slightly. This meal plan is designed to provide a balanced mix of nutrients while respecting your dosha and health goal.\\n\\nRemember to stay hydrated by drinking plenty of water throughout the day, and adjust the meal plan as needed based on your individual needs and preferences."
-  }
-  ''';
+  final Map<String, Color> _doshaColors = {
+    'Vata': Colors.lightBlue.shade300,
+    'Pitta': Colors.red.shade300,
+    'Kapha': Colors.green.shade300,
+    'Vata-Pitta': Colors.orange.shade300,
+    'Vata-Kapha': Colors.teal.shade300,
+    'Pitta-Kapha': Colors.purple.shade300,
+  };
 
   @override
   void initState() {
     super.initState();
-    _reportDataFuture = _fetchAndParseReport();
+    _doshaProbabilitiesFuture = _fetchDoshaProbabilities();
   }
 
-  // Simulates fetching and parsing the report data
-  Future<ReportData> _fetchAndParseReport() async {
-    // In a real app, this would be an API call.
-    // Here, we simulate it with a short delay.
-    await Future.delayed(const Duration(seconds: 1));
-    return ReportData.fromJson(_jsonResponse);
+  /// --- UPDATED: This function now fetches live data from Supabase ---
+  Future<Map<String, double>> _fetchDoshaProbabilities() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in.');
+    }
+
+    try {
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('prediction_probs') // Select the correct column
+          .eq('id', user.id)
+          .single();
+
+      // Check if data exists
+      if (response['prediction_probs'] == null) {
+        throw Exception('No prediction data found. Please complete the interview.');
+      }
+
+      // The data from Supabase will be Map<String, dynamic>
+      final rawProbs = response['prediction_probs'] as Map<String, dynamic>;
+      
+      // Convert the keys and cast values to the format our UI needs
+      final formattedProbs = <String, double>{};
+      rawProbs.forEach((key, value) {
+        // Format key from "vata+pitta" to "Vata-Pitta"
+        final formattedKey = key
+            .split('+')
+            .map((part) => part.capitalize())
+            .join('-');
+        // Ensure the value is a double
+        formattedProbs[formattedKey] = (value as num).toDouble();
+      });
+
+      return formattedProbs;
+
+    } catch (e) {
+      print('Error fetching prediction probabilities: $e');
+      // Re-throw the error to be caught by the FutureBuilder
+      throw Exception('Failed to load your dosha report.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     const pranaTextColor = Color(0xFF6B5B3B);
-    const pageBackgroundColor = Color.fromARGB(255, 69, 136, 153);
-    const cardBackgroundColor = Color(0xFFF3F3ED);
+    const backgroundColor = Color(0xFFF3F3ED);
 
     return Scaffold(
-      backgroundColor: pageBackgroundColor,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Report', style: TextStyle(color: Colors.white, fontFamily: 'Montserrat', fontWeight: FontWeight.w900)),
+        title: const Text('Dosha Profiling Report', style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat')),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: pranaTextColor),
       ),
-      body: FutureBuilder<ReportData>(
-        future: _reportDataFuture,
+      body: FutureBuilder<Map<String, double>>(
+        future: _doshaProbabilitiesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(child: CircularProgressIndicator(color: pranaTextColor));
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+            // Display a user-friendly error message
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Text(
+                  '${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ),
+            );
           } else if (snapshot.hasData) {
-            final data = snapshot.data!;
+            final probabilities = snapshot.data!;
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Your Personalized report is here!',
+                    'Dosha Prediction Probabilities',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      color: pranaTextColor,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // "Your profile" card
-                  Container(
-                    padding: const EdgeInsets.all(20.0),
-                    decoration: BoxDecoration(
-                      color: cardBackgroundColor,
-                      borderRadius: BorderRadius.circular(15.0),
-                      border: Border.all(color: const Color(0xFF87CEEB).withOpacity(0.5), width: 2),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Your profile',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: pranaTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildProfileColumn(data.inputParameters, true),
-                            _buildProfileColumn(data.inputParameters, false),
-                          ],
-                        ),
-                      ],
+                  SizedBox(
+                    height: 300,
+                    child: PieChart(
+                      PieChartData(
+                        sections: _buildChartSections(probabilities),
+                        centerSpaceRadius: 60,
+                        sectionsSpace: 4,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 15),
-                  // "Your report" section
-                  Container(
-                     padding: const EdgeInsets.all(20.0),
-                    decoration: BoxDecoration(
-                      color: cardBackgroundColor,
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    child: _buildFormattedReport(data.report, pranaTextColor),
-                  )
+                  const SizedBox(height: 30),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  _buildLegend(probabilities),
                 ],
               ),
             );
           }
-          return const Center(child: Text('No report data found.', style: TextStyle(color: Colors.white)));
+          return const Center(child: Text('No data available.'));
         },
       ),
     );
   }
 
-  // Helper widget to build the two columns in the profile card
-  Widget _buildProfileColumn(InputParameters params, bool isLeft) {
-    const labelStyle = TextStyle(fontFamily: 'Montserrat', color: Color.fromARGB(255, 75, 75, 75), fontSize: 14, fontWeight: FontWeight.w700);
-    const valueStyle = TextStyle(fontFamily: 'Montserrat', color: Color(0xFF6B5B3B), fontSize: 16, fontWeight: FontWeight.w900);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: isLeft
-          ? [
-              const Text('Dosha:', style: labelStyle),
-              Text(params.dosha, style: valueStyle),
-              const SizedBox(height: 10),
-              const Text('Goal:', style: labelStyle),
-              Text(params.goal, style: valueStyle),
-              const SizedBox(height: 10),
-              const Text('Weight(kg):', style: labelStyle),
-              Text(params.weightKg.toString(), style: valueStyle),
-              const SizedBox(height: 10),
-              const Text('Height(cm):', style: labelStyle),
-              Text(params.heightCm.toString(), style: valueStyle),
-            ]
-          : [
-              const Text('Age:', style: labelStyle),
-              Text(params.age.toString(), style: valueStyle),
-              const SizedBox(height: 10),
-              const Text('Gender:', style: labelStyle),
-              Text(params.gender, style: valueStyle),
-              const SizedBox(height: 10),
-              const Text('Activity Level:', style: labelStyle),
-              Text(params.activityLevel, style: valueStyle),
-            ],
-    );
+  List<PieChartSectionData> _buildChartSections(Map<String, double> probabilities) {
+    return probabilities.entries.map((entry) {
+      final percentage = (entry.value * 100).toStringAsFixed(1);
+      return PieChartSectionData(
+        value: entry.value,
+        title: '$percentage%',
+        color: _doshaColors[entry.key] ?? Colors.grey,
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          shadows: [Shadow(color: Colors.black, blurRadius: 2)],
+        ),
+      );
+    }).toList();
   }
 
-  // Helper widget to parse and format the LLM report string
-  Widget _buildFormattedReport(String reportText, Color textColor) {
-    List<TextSpan> spans = [];
-    final lines = reportText.split('\n');
+  Widget _buildLegend(Map<String, double> probabilities) {
+    // Sort the entries by probability, descending
+    final sortedEntries = probabilities.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-    for (var line in lines) {
-      line = line.trim();
-      if (line.isEmpty) {
-        spans.add(const TextSpan(text: '\n'));
-        continue;
-      }
+    return Column(
+      children: sortedEntries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                color: _doshaColors[entry.key] ?? Colors.grey,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '${entry.key} (${(entry.value * 100).toStringAsFixed(1)}%)',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
 
-      TextStyle style = TextStyle(fontFamily: 'Montserrat', color: textColor, fontSize: 15, height: 1.5, fontWeight: FontWeight.w900);
-      String text = '$line\n';
-
-      if (line.startsWith('**') && line.endsWith('**')) {
-        text = '${line.replaceAll('**', '')}\n';
-        style = style.copyWith(fontWeight: FontWeight.w900, fontSize: 18);
-      } else if (line.startsWith('* ')) {
-        text = '• ${line.substring(2)}\n';
-        style = style.copyWith(fontWeight: FontWeight.w600);
-      } else if (line.startsWith('+ ')) {
-        text = '    - ${line.substring(2)}\n';
-         style = style.copyWith(color: textColor.withOpacity(0.85));
-      }
-
-      spans.add(TextSpan(text: text, style: style));
-    }
-    
-    return RichText(text: TextSpan(children: spans));
+// Helper extension to capitalize strings
+extension StringExtension on String {
+  String capitalize() {
+    if (isEmpty) return "";
+    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

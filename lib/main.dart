@@ -11,6 +11,7 @@ import 'view_profile_page.dart'; // Assuming you will create this page
 import 'dosha_result_page.dart';
 import 'diet_chart_interview_page.dart';
 import 'diet_chart_display_page.dart';
+import 'find_doctors_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +48,8 @@ class MyApp extends StatelessWidget {
         '/view_profile': (context) => const ViewProfilePage(), // New route
         '/dosha_result': (context) => const DoshaResultPage(),
         '/diet_chart_interview': (context) => const DietChartInterviewPage(), // <-- ADD THIS
-        '/diet_chart_display': (context) => const DietChartDisplayPage()
+        '/diet_chart_display': (context) => const DietChartDisplayPage(),
+        '/find_doctors': (context) => const FindDoctorsPage(),
       },
       debugShowCheckedModeBanner: false,
     );

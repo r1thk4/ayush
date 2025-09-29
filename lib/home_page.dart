@@ -107,13 +107,13 @@ class _HomePageState extends State<HomePage> {
                       imagePath: 'assets/images/home_3.png', // Using a placeholder
                       title: 'My Ayurvedic Report',
                       subtitle: 'Tap to view your report.',
-                      onTap: () { /* Navigator.pushNamed(context, '/doctor_report'); */ },
+                      onTap: () { Navigator.pushNamed(context, '/report');},
                     ),
                     _buildActionTile(
                     imagePath: 'assets/images/home_4.png',
                     title: 'Consult a Doctor', // <-- Updated
                     subtitle: 'Find and book appointments with Ayurvedic experts.', // <-- Updated
-                    onTap: () { /* Navigator.pushNamed(context, '/find_doctors'); */ },
+                    onTap: () { Navigator.pushNamed(context, '/find_doctors'); },
                   ),
                   ],
                 ),
