@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: pranaTextColor,
                       ),
                     ),
@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
                       imagePath: 'assets/images/home_1.png', // Using your image
                       title: 'Generate Diet Chart',
                       subtitle: 'Get a diet plan based on your preferences.',
-                      onTap: () { Navigator.pushNamed(context, '/diet_chart_interview'); },
+                      onTap: () { Navigator.pushNamed(context, '/diet_chart_display'); },
                     ),
                     _buildActionTile(
                       imagePath: 'assets/images/home_2.png', // Using your image
@@ -105,16 +105,16 @@ class _HomePageState extends State<HomePage> {
                     ),
                     _buildActionTile(
                       imagePath: 'assets/images/home_3.png', // Using a placeholder
-                      title: 'Report by Doctor',
-                      subtitle: 'Request a professional review of your report.',
+                      title: 'My Ayurvedic Report',
+                      subtitle: 'Tap to view your report.',
                       onTap: () { /* Navigator.pushNamed(context, '/doctor_report'); */ },
                     ),
                     _buildActionTile(
-                      imagePath: 'assets/images/home_4.png', // Using a placeholder
-                      title: 'Find Doctors Nearby',
-                      subtitle: 'Locate certified Ayurvedic practitioners near you.',
-                      onTap: () { /* Navigator.pushNamed(context, '/find_doctors'); */ },
-                    ),
+                    imagePath: 'assets/images/home_4.png',
+                    title: 'Consult a Doctor', // <-- Updated
+                    subtitle: 'Find and book appointments with Ayurvedic experts.', // <-- Updated
+                    onTap: () { /* Navigator.pushNamed(context, '/find_doctors'); */ },
+                  ),
                   ],
                 ),
               ),
@@ -147,31 +147,32 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const SizedBox(height: 30),
                       const Text(
                         'Hello,',
                         style: TextStyle(
                           fontFamily: 'Montserrat',
                           color: Colors.white,
                           fontSize: 20,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
                         _userName.split(' ').first,
                         style: const TextStyle(
-                          fontFamily: 'Cinzel',
+                          fontFamily: 'Montserrat',
                           color: Colors.white,
                           fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 5),
                       Text(
                         'Your Dosha: $_predictedDosha',
                         style: TextStyle(
                           fontFamily: 'Montserrat',
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -252,7 +253,7 @@ class _HomePageState extends State<HomePage> {
           title,
           style: const TextStyle(
             fontFamily: 'Montserrat',
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: pranaTextColor,
           ),
         ),
@@ -262,6 +263,7 @@ class _HomePageState extends State<HomePage> {
             fontFamily: 'Montserrat',
             color: pranaTextColor.withOpacity(0.7),
             fontSize: 12,
+            fontWeight: FontWeight.w500
           ),
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),

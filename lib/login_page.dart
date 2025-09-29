@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                             const Column(
                               children: [
                                 Text('AyurDiet', style: TextStyle(fontFamily: 'Cinzel', fontSize: 40, color: pranaTextColor, letterSpacing: 1.0, height: 1.2)),
-                                Text('Ayurvedic Nutrition', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14, color: pranaTextColor, letterSpacing: 1.5, height: 0.1, fontWeight: FontWeight.w700)),
+                                Text('Ayurvedic Nutrition', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14, color: pranaTextColor, letterSpacing: 1.5, height: 0.1, fontWeight: FontWeight.w500)),
                               ],
                             ),
                             const SizedBox(height: 30),
@@ -150,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
                               },
                               child: const Text(
                                 "Don't have an account? Sign Up",
-                                style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat', fontWeight: FontWeight.w900),
+                                style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat', fontWeight: FontWeight.w500),
                               ),
                             ),
                           ],
