@@ -18,7 +18,7 @@ class DoshaResultPage extends StatefulWidget {
 }
 
 class _DoshaResultPageState extends State<DoshaResultPage> {
-  late final Future<Map<String, dynamic>> _predictionFuture;
+  late final Future<Map<String, dynamic>?> _predictionFuture;
 
   // The keys here MUST match the formatted string (e.g., "Vata-Pitta")
   final Map<String, DoshaAssets> _doshaAssetMap = {
@@ -28,7 +28,6 @@ class _DoshaResultPageState extends State<DoshaResultPage> {
     'Vata-Pitta': DoshaAssets(imagePath: 'assets/images/vata_pitta.png', backgroundColor: const Color(0xFF9B876E)),
     'Pitta-Kapha': DoshaAssets(imagePath: 'assets/images/pitta_kapha.png', backgroundColor: const Color(0xFF99BCBB)),
     'Vata-Kapha': DoshaAssets(imagePath: 'assets/images/vata_kapha.png', backgroundColor: const Color(0xFFA1947A)),
-    'Default': DoshaAssets(imagePath: 'assets/images/logo_lotus.png', backgroundColor: Colors.grey.shade400),
   };
 
   @override
@@ -37,8 +36,8 @@ class _DoshaResultPageState extends State<DoshaResultPage> {
     _predictionFuture = _fetchPrediction();
   }
 
-  /// Fetches the prediction and formats the dosha string correctly.
-  Future<Map<String, dynamic>> _fetchPrediction() async {
+  /// Fetches the prediction from Supabase. Returns null if no prediction is found.
+  Future<Map<String, dynamic>?> _fetchPrediction() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
@@ -48,17 +47,19 @@ class _DoshaResultPageState extends State<DoshaResultPage> {
           .select('prakriti, updated_at')
           .eq('id', user.id)
           .single();
-
-      final rawDosha = response['prakriti'] as String? ?? 'Not Found';
       
-      // --- THIS IS THE FIX ---
-      // Format the string from "vata+pitta" to "Vata-Pitta"
+      final rawDosha = response['prakriti'] as String?;
+      
+      // If no dosha is found, return null
+      if (rawDosha == null || rawDosha.isEmpty) {
+        return null;
+      }
+
       final formattedDosha = rawDosha
           .split('+')
           .map((part) => part.capitalize())
           .join('-');
-      // --- END OF FIX ---
-
+      
       final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(response['updated_at']));
       
       return {'dosha': formattedDosha, 'date': date};
@@ -70,118 +71,138 @@ class _DoshaResultPageState extends State<DoshaResultPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<Map<String, dynamic>?>(
       future: _predictionFuture,
       builder: (context, snapshot) {
-        DoshaAssets currentAssets;
-        String predictedDosha = 'Loading...';
-        String interviewDate = '';
-
-        if (snapshot.connectionState == ConnectionState.done && !snapshot.hasError) {
-          predictedDosha = snapshot.data!['dosha'];
-          interviewDate = snapshot.data!['date'];
-          currentAssets = _doshaAssetMap[predictedDosha] ?? _doshaAssetMap['Default']!;
-        } else {
-          currentAssets = _doshaAssetMap['Default']!;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(child: Text('Error: ${snapshot.error}')),
+          );
         }
 
-        return Scaffold(
-          backgroundColor: currentAssets.backgroundColor,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  snapshot.connectionState == ConnectionState.waiting
-                      ? const SizedBox()
-                      : Column(
-                          children: [
-                            const SizedBox(height: 40),
-                            Text(
-                              'Based on your last interview on $interviewDate',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 24,
-                                color: Colors.white,
-                                decorationColor: Colors.white,
-                                fontWeight: FontWeight.w600
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            const Text(
-                              'Your Predicted\nDosha Type:',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 36,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                  
-                  snapshot.connectionState == ConnectionState.waiting
-                      ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                      : Column(
-                          children: [
-                            Image.asset(
-                              currentAssets.imagePath,
-                              height: 180,
-                              width: 180,
-                            ),
-                            Text(
-                              predictedDosha,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Cinzel',
-                                fontSize: 56,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
+        final predictionData = snapshot.data;
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pushReplacementNamed(context, '/interview'),
-                        child: const Text(
-                          'Retake interview',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                             decorationColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
-                        child: const Text(
-                          'Go home',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                             decorationColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+        // If predictionData is null, it means no dosha was found
+        if (predictionData == null) {
+          return _buildNoDataView(context);
+        } else {
+          return _buildResultView(context, predictionData);
+        }
+      },
+    );
+  }
+
+  /// The UI to show when a dosha prediction EXISTS.
+  Widget _buildResultView(BuildContext context, Map<String, dynamic> predictionData) {
+    final predictedDosha = predictionData['dosha'];
+    final interviewDate = predictionData['date'];
+    final currentAssets = _doshaAssetMap[predictedDosha] ?? DoshaAssets(imagePath: '', backgroundColor: Colors.grey);
+
+    return Scaffold(
+      backgroundColor: currentAssets.backgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Column(
+                children: [
+                  const SizedBox(height: 40),
+                  Text(
+                    'Based on your last interview on $interviewDate',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontFamily: 'Montserrat', fontSize: 24, color: Colors.white, decorationColor: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Your Predicted\nDosha Type:',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'Montserrat', fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white, height: 1.2),
                   ),
                 ],
               ),
-            ),
+              Column(
+                children: [
+                  Image.asset(currentAssets.imagePath, height: 180, width: 180),
+                  Text(
+                    predictedDosha,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontFamily: 'Cinzel', fontSize: 56, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/interview'),
+                    child: const Text('Retake interview', style: TextStyle(fontFamily: 'Montserrat', color: Colors.white, decoration: TextDecoration.underline, decorationColor: Colors.white)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
+                    child: const Text('Go home', style: TextStyle(fontFamily: 'Montserrat', color: Colors.white, decoration: TextDecoration.underline, decorationColor: Colors.white)),
+                  ),
+                ],
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  /// The UI to show when NO dosha prediction is found.
+  Widget _buildNoDataView(BuildContext context) {
+    const pranaTextColor = Color(0xFF6B5B3B);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F3ED),
+      appBar: AppBar(
+        title: const Text('Dosha Result', style: TextStyle(color: pranaTextColor, fontFamily: 'Montserrat')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: pranaTextColor),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.info_outline, color: pranaTextColor, size: 80),
+              const SizedBox(height: 20),
+              const Text(
+                'Your Dosha analysis is not yet available.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Montserrat', fontSize: 22, fontWeight: FontWeight.bold, color: pranaTextColor),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Please take the interview to discover your personalized Ayurvedic profile.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Montserrat', fontSize: 16, color: pranaTextColor),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/interview');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3A6A70),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Take Interview Now', style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
